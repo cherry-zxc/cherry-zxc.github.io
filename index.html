@@ -2,311 +2,521 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Крестики-нолики 🤖</title>
+    <title>Шашки for Cherry🏁</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #0d1117;
-            color: #eee;
+            font-family: Georgia, 'Times New Roman', serif;
+            background: radial-gradient(ellipse at center, #2a1f18 0%, #0d0a08 100%);
+            color: #e8dcc8;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 16px;
             user-select: none;
         }
-        h1 { font-size: 28px; margin-bottom: 10px; }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 10px;
+            color: #d4b483;
+            letter-spacing: 3px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }
+
         .difficulty {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
+
         .diff-btn {
             padding: 8px 16px;
-            background: #161b22;
-            color: #888;
-            border: 2px solid #30363d;
-            border-radius: 10px;
-            font-size: 14px;
+            background: linear-gradient(145deg, #3d2e1f, #1a120a);
+            color: #a08868;
+            border: 1px solid #5a4530;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
             cursor: pointer;
-            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.15s;
         }
+
         .diff-btn.active {
-            background: #4ea1ff;
-            color: #fff;
-            border-color: #4ea1ff;
-        }
-        #status {
-            font-size: 18px;
-            margin-bottom: 16px;
-            color: #4ea1ff;
+            background: linear-gradient(145deg, #d4af37, #a88a2a);
+            color: #1a1410;
+            border-color: #d4af37;
             font-weight: bold;
-            min-height: 24px;
         }
+
+        .status {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #c9a875;
+            min-height: 22px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .board-frame {
+            padding: 12px;
+            background: linear-gradient(145deg, #3d2e1f, #1a120a);
+            border-radius: 8px;
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.7),
+                inset 0 0 0 2px #5a4530,
+                inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
         #board {
             display: grid;
-            grid-template-columns: repeat(3, 100px);
-            grid-template-rows: repeat(3, 100px);
-            gap: 8px;
-            background: #30363d;
-            padding: 8px;
-            border-radius: 16px;
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
+            border-radius: 4px;
+            overflow: hidden;
         }
+
         .cell {
-            background: #161b22;
-            border: none;
-            border-radius: 10px;
-            font-size: 52px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #eee;
-            transition: background 0.15s;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .cell:hover:not(:disabled) { background: #21262d; }
-        .cell:active:not(:disabled) { transform: scale(0.96); }
-        .cell.x { color: #4ea1ff; }
-        .cell.o { color: #ff6b6b; }
-        .cell:disabled { cursor: default; }
-        .cell.win { background: #1f6feb; }
-        #reset {
-            margin-top: 16px;
-            padding: 12px 32px;
-            font-size: 16px;
-            background: #4ea1ff;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
             cursor: pointer;
-            font-weight: bold;
+            position: relative;
+            transition: background 0.15s;
         }
-        #reset:active { background: #3a8fe0; }
+
+        .cell.light { background: #c9a875; }
+        .cell.dark  { background: #1a1410; }
+
+        .cell.selected { box-shadow: inset 0 0 0 3px #d4af37; }
+
+        .cell.possible::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: rgba(212, 175, 55, 0.7);
+            border-radius: 50%;
+        }
+
+        .cell.possible.capture::after {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: 3px solid rgba(220, 60, 60, 0.8);
+            border-radius: 50%;
+        }
+
+        .cell.last-move { box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 0.5); }
+
+        .piece {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow:
+                0 3px 5px rgba(0,0,0,0.6),
+                inset 0 -3px 6px rgba(0,0,0,0.4),
+                inset 0 3px 6px rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            pointer-events: none;
+            transition: transform 0.15s;
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #f5e6c8, #b8935a);
+            border: 1px solid #8a6a3a;
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #4a3826, #0d0a08);
+            border: 1px solid #000;
+        }
+
+        .piece.king::after {
+            content: '♛';
+            color: #d4af37;
+            font-size: 18px;
+            text-shadow: 0 0 3px #000;
+        }
+
+        .piece.white.king::after { color: #b8935a; }
+        .piece.black.king::after { color: #d4af37; }
+
+        #reset {
+            margin-top: 14px;
+            padding: 10px 28px;
+            background: linear-gradient(145deg, #5a4530, #3d2e1f);
+            color: #e8dcc8;
+            border: 1px solid #7a5f42;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        #reset:active { transform: translateY(1px); }
     </style>
 </head>
 <body>
-    <h1>❌ Крестики-нолики ⭕</h1>
+    <h1>♛ ШАШКИ ♛</h1>
 
     <div class="difficulty">
-        <button class="diff-btn" data-level="easy">😴 Лёгкий</button>
-        <button class="diff-btn active" data-level="medium">🤔 Средний</button>
-        <button class="diff-btn" data-level="hard">🧠 Сложный</button>
+        <button class="diff-btn active" data-level="easy">Лёгкий 😃</button>
+        <button class="diff-btn" data-level="medium">Средний ⚠️</button>
     </div>
 
-    <div id="status">Твой ход (❌)</div>
-    <div id="board"></div>
-    <button id="reset">Заново</button>
+    <div class="status" id="status">Твой ход (белые)</div>
+
+    <div class="board-frame">
+        <div id="board"></div>
+    </div>
+
+    <button id="reset">↻ Заново</button>
 
     <script>
+        // === Состояние ===
+        // board[8][8]: null | { color: 'w'|'b', king: bool }
+        let board = [];
+        let selected = null;        // {r, c}
+        let possibleMoves = [];     // [{from:{r,c}, to:{r,c}, capture:{r,c}|null}]
+        let turn = 'w';             // 'w' или 'b'
+        let gameOver = false;
+        let difficulty = 'easy';
+        let lastMove = null;
+
         const boardEl = document.getElementById('board');
         const statusEl = document.getElementById('status');
-        const resetBtn = document.getElementById('reset');
-        const diffBtns = document.querySelectorAll('.diff-btn');
 
-        let board = Array(9).fill('');
-        let gameOver = false;
-        let difficulty = 'medium';
-        const HUMAN = 'X';
-        const BOT = 'O';
-
-        // === Создание поля ===
-        function createBoard() {
-            boardEl.innerHTML = '';
-            for (let i = 0; i < 9; i++) {
-                const cell = document.createElement('button');
-                cell.className = 'cell';
-                cell.dataset.index = i;
-                cell.addEventListener('click', () => handleClick(i));
-                boardEl.appendChild(cell);
+        // === Инициализация ===
+        function initBoard() {
+            board = Array.from({ length: 8 }, () => Array(8).fill(null));
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    // тёмные клетки
+                    if ((r + c) % 2 === 1) {
+                        if (r < 3) board[r][c] = { color: 'b', king: false };
+                        if (r > 4) board[r][c] = { color: 'w', king: false };
+                    }
+                }
             }
+            turn = 'w';
+            selected = null;
+            possibleMoves = [];
+            gameOver = false;
+            lastMove = null;
         }
+
+        // === Возможные ходы для фигуры ===
+        function getMovesFor(r, c, captureOnly = false) {
+            const piece = board[r][c];
+            if (!piece) return [];
+            const moves = [];
+            const dirs = piece.king
+                ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+                : (piece.color === 'w' ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]);
+
+            for (const [dr, dc] of dirs) {
+                // обычный ход на 1
+                if (!captureOnly) {
+                    const nr = r + dr, nc = c + dc;
+                    if (inBoard(nr, nc) && !board[nr][nc]) {
+                        moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                    }
+                }
+
+                // взятие (для всех направлений, даже не дамки — русские правила)
+                const allDirs = piece.king
+                    ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+                    : [[-1,-1],[-1,1],[1,-1],[1,1]]; // русские: бьют во все стороны
+
+                for (const [ddr, ddc] of allDirs) {
+                    const mr = r + ddr, mc = c + ddc;
+                    const tr = r + 2*ddr, tc = c + 2*ddc;
+                    if (inBoard(tr, tc) && board[mr] && board[mr][mc]
+                        && board[mr][mc].color !== piece.color
+                        && !board[tr][tc]) {
+                        moves.push({ from: {r, c}, to: {r: tr, c: tc}, capture: {r: mr, c: mc} });
+                    }
+                }
+
+                // Дамка — длинные ходы
+                if (piece.king) {
+                    let step = 1;
+                    while (true) {
+                        const nr = r + dr * step, nc = c + dc * step;
+                        if (!inBoard(nr, nc) || board[nr][nc]) break;
+                        if (!captureOnly) {
+                            moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                        }
+                        step++;
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        // Все ходы для цвета
+        function getAllMoves(color) {
+            const all = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = board[r][c];
+                    if (p && p.color === color) {
+                        const moves = getMovesFor(r, c);
+                        for (const m of moves) all.push(m);
+                    }
+                }
+            }
+            return all;
+        }
+
+        // Обязательность взятия
+        function getLegalMoves(color) {
+            const all = getAllMoves(color);
+            const captures = all.filter(m => m.capture);
+            return captures.length > 0 ? captures : all;
+        }
+
+        function inBoard(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
         // === Отрисовка ===
         function render() {
-            const cells = boardEl.children;
-            for (let i = 0; i < 9; i++) {
-                cells[i].textContent = board[i];
-                cells[i].className = 'cell';
-                if (board[i] === 'X') cells[i].classList.add('x');
-                if (board[i] === 'O') cells[i].classList.add('o');
-                cells[i].disabled = board[i] !== '' || gameOver;
-            }
-        }
+            boardEl.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    const isDark = (r + c) % 2 === 1;
+                    cell.className = 'cell ' + (isDark ? 'dark' : 'light');
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
 
-        // === Проверка победы ===
-        const winLines = [
-            [0,1,2],[3,4,5],[6,7,8], // строки
-            [0,3,6],[1,4,7],[2,5,8], // столбцы
-            [0,4,8],[2,4,6]          // диагонали
-        ];
-
-        function checkWinner(b) {
-            for (const line of winLines) {
-                const [a, c, d] = line;
-                if (b[a] && b[a] === b[c] && b[a] === b[d]) {
-                    return { winner: b[a], line };
-                }
-            }
-            if (b.every(cell => cell !== '')) return { winner: 'draw' };
-            return null;
-        }
-
-        // === Минимакс — мозг сложного бота ===
-        function minimax(b, isMaximizing, depth = 0) {
-            const result = checkWinner(b);
-            if (result) {
-                if (result.winner === BOT) return 10 - depth;
-                if (result.winner === HUMAN) return depth - 10;
-                return 0;
-            }
-
-            if (isMaximizing) {
-                let best = -Infinity;
-                for (let i = 0; i < 9; i++) {
-                    if (b[i] === '') {
-                        b[i] = BOT;
-                        best = Math.max(best, minimax(b, false, depth + 1));
-                        b[i] = '';
+                    if (selected && selected.r === r && selected.c === c) {
+                        cell.classList.add('selected');
                     }
-                }
-                return best;
-            } else {
-                let best = Infinity;
-                for (let i = 0; i < 9; i++) {
-                    if (b[i] === '') {
-                        b[i] = HUMAN;
-                        best = Math.min(best, minimax(b, true, depth + 1));
-                        b[i] = '';
+
+                    if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c)
+                        || (lastMove.to.r === r && lastMove.to.c === c))) {
+                        cell.classList.add('last-move');
                     }
-                }
-                return best;
-            }
-        }
 
-        function getBestMove(b) {
-            let bestScore = -Infinity;
-            let bestMove = -1;
-            for (let i = 0; i < 9; i++) {
-                if (b[i] === '') {
-                    b[i] = BOT;
-                    const score = minimax(b, false);
-                    b[i] = '';
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMove = i;
+                    const moveHere = possibleMoves.find(m => m.to.r === r && m.to.c === c);
+                    if (moveHere) {
+                        cell.classList.add('possible');
+                        if (moveHere.capture) cell.classList.add('capture');
                     }
+
+                    const p = board[r][c];
+                    if (p) {
+                        const pieceEl = document.createElement('div');
+                        pieceEl.className = 'piece ' + (p.color === 'w' ? 'white' : 'black');
+                        if (p.king) pieceEl.classList.add('king');
+                        cell.appendChild(pieceEl);
+                    }
+
+                    cell.addEventListener('click', () => handleClick(r, c));
+                    boardEl.appendChild(cell);
                 }
             }
-            return bestMove;
+            updateStatus();
         }
 
-        function getRandomMove(b) {
-            const empty = [];
-            for (let i = 0; i < 9; i++) if (b[i] === '') empty.push(i);
-            return empty[Math.floor(Math.random() * empty.length)];
-        }
-
-        // Умный бот с ошибочностью для среднего уровня
-        function getSmartMove(b) {
-            // 1) Выиграть, если можно
-            for (let i = 0; i < 9; i++) {
-                if (b[i] === '') {
-                    b[i] = BOT;
-                    if (checkWinner(b)?.winner === BOT) { b[i] = ''; return i; }
-                    b[i] = '';
-                }
+        function updateStatus() {
+            if (gameOver) return;
+            const legal = getLegalMoves(turn);
+            if (legal.length === 0) {
+                gameOver = true;
+                statusEl.textContent = (turn === 'w' ? 'Чёрные победили! 🏆' : 'Белые победили! 🏆');
+                return;
             }
-            // 2) Заблокировать игрока
-            for (let i = 0; i < 9; i++) {
-                if (b[i] === '') {
-                    b[i] = HUMAN;
-                    if (checkWinner(b)?.winner === HUMAN) { b[i] = ''; return i; }
-                    b[i] = '';
-                }
-            }
-            // 3) Центр
-            if (b[4] === '') return 4;
-            // 4) Углы
-            const corners = [0, 2, 6, 8].filter(i => b[i] === '');
-            if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
-            // 5) Что осталось
-            return getRandomMove(b);
+            statusEl.textContent = turn === 'w' ? 'Твой ход (белые)' : 'Бот думает... 🤖';
         }
 
-        function getBotMove() {
-            if (difficulty === 'easy') return getRandomMove(board);
-            if (difficulty === 'medium') {
-                return Math.random() < 0.5 ? getSmartMove(board) : getRandomMove(board);
+        // === Ход игрока ===
+        function handleClick(r, c) {
+            if (gameOver || turn !== 'w') return;
+
+            // тап по возможному ходу
+            const move = possibleMoves.find(m => m.to.r === r && m.to.c === c);
+            if (move) {
+                applyMove(move);
+                return;
             }
-            return getBestMove(board); // hard — минимакс, непобедим
-        }
 
-        // === Обработка хода игрока ===
-        function handleClick(i) {
-            if (board[i] !== '' || gameOver) return;
-            board[i] = HUMAN;
-            render();
-            if (finishIfOver()) return;
-
-            statusEl.textContent = 'Бот думает... 🤖';
-            setTimeout(() => {
-                const move = getBotMove();
-                if (move !== -1 && move !== undefined) board[move] = BOT;
+            // выбор своей фигуры
+            const p = board[r][c];
+            if (p && p.color === 'w') {
+                selected = { r, c };
+                const legal = getLegalMoves('w');
+                possibleMoves = legal.filter(m => m.from.r === r && m.from.c === c);
                 render();
-                if (!finishIfOver()) {
-                    statusEl.textContent = 'Твой ход (❌)';
-                }
-            }, 400);
+            } else {
+                selected = null;
+                possibleMoves = [];
+                render();
+            }
         }
 
-        function finishIfOver() {
-            const result = checkWinner(board);
-            if (!result) return false;
-            gameOver = true;
+        function applyMove(move) {
+            const piece = board[move.from.r][move.from.c];
+            board[move.from.r][move.from.c] = null;
+            board[move.to.r][move.to.c] = piece;
+
+            if (move.capture) {
+                board[move.capture.r][move.capture.c] = null;
+            }
+
+            // превращение в дамку
+            if (!piece.king) {
+                if (piece.color === 'w' && move.to.r === 0) piece.king = true;
+                if (piece.color === 'b' && move.to.r === 7) piece.king = true;
+            }
+
+            lastMove = move;
+            selected = null;
+            possibleMoves = [];
+
+            // проверка на мульти-взятие (по русским правилам надо продолжать бить)
+            if (move.capture) {
+                const moreCaptures = getMovesFor(move.to.r, move.to.c, true);
+                if (moreCaptures.length > 0) {
+                    // продолжаем бить той же фигурой
+                    selected = { r: move.to.r, c: move.to.c };
+                    possibleMoves = moreCaptures;
+                    render();
+                    if (turn === 'b') {
+                        setTimeout(botContinue, 500);
+                    }
+                    return;
+                }
+            }
+
+            // смена хода
+            turn = turn === 'w' ? 'b' : 'w';
             render();
 
-            if (result.winner === 'draw') {
-                statusEl.textContent = 'Ничья! 🤝';
-            } else if (result.winner === HUMAN) {
-                statusEl.textContent = 'Ты победил! 🎉';
-            } else {
-                statusEl.textContent = 'Бот победил 😈';
+            if (turn === 'b' && !gameOver) {
+                setTimeout(botMove, 500);
             }
-
-            if (result.line) {
-                result.line.forEach(i => boardEl.children[i].classList.add('win'));
-            }
-            return true;
         }
 
-        // === Уровни сложности ===
-        diffBtns.forEach(btn => {
+        function botContinue() {
+            // бот продолжает бить той же фигурой
+            botMove();
+        }
+
+        // === Бот ===
+        function botMove() {
+            if (gameOver) return;
+            const legal = getLegalMoves('b');
+            if (legal.length === 0) {
+                gameOver = true;
+                statusEl.textContent = 'Белые победили! 🏆';
+                return;
+            }
+
+            let move;
+            if (difficulty === 'easy') {
+                move = legal[Math.floor(Math.random() * legal.length)];
+            } else if (difficulty === 'medium') {
+                move = pickMediumMove(legal);
+            }
+
+            applyMove(move);
+        }
+
+        // Средний: бьёт всегда, иначе — избегает подстав
+        function pickMediumMove(legal) {
+            // 1. Если есть взятия — берём самое «жирное» (цепочка)
+            const captures = legal.filter(m => m.capture);
+            if (captures.length > 0) {
+                // предпочитаем взятие дамки или максимум взятий
+                captures.sort((a, b) => scoreCapture(b) - scoreCapture(a));
+                if (Math.random() < 0.85) return captures[0];
+            }
+
+            // 2. Иначе — ход, который не подставляется
+            const safeMoves = legal.filter(m => !isRisky(m));
+            if (safeMoves.length > 0 && Math.random() < 0.7) {
+                return safeMoves[Math.floor(Math.random() * safeMoves.length)];
+            }
+
+            return legal[Math.floor(Math.random() * legal.length)];
+        }
+
+        function scoreCapture(m) {
+            const target = board[m.capture.r][m.capture.c];
+            return target && target.king ? 2 : 1;
+        }
+
+        function isRisky(move) {
+            // симулируем: после хода — может ли белый побить?
+            const backup = board.map(row => row.map(p => p ? { ...p } : null));
+            const piece = board[move.from.r][move.from.c];
+            board[move.from.r][move.from.c] = null;
+            board[move.to.r][move.to.c] = piece;
+            let captured = null;
+            if (move.capture) {
+                captured = board[move.capture.r][move.capture.c];
+                board[move.capture.r][move.capture.c] = null;
+            }
+
+            // проверяем, побьёт ли белый эту фигуру
+            let risky = false;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = board[r][c];
+                    if (p && p.color === 'w') {
+                        const caps = getMovesFor(r, c, true);
+                        if (caps.some(cm => cm.capture.r === move.to.r && cm.capture.c === move.to.c)) {
+                            risky = true;
+                        }
+                    }
+                }
+            }
+
+            // откат
+            for (let r = 0; r < 8; r++)
+                for (let c = 0; c < 8; c++)
+                    board[r][c] = backup[r][c];
+            if (move.capture && captured) board[move.capture.r][move.capture.c] = captured;
+
+            return risky;
+        }
+
+        // === Уровни ===
+        document.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                diffBtns.forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 difficulty = btn.dataset.level;
-                resetGame();
+                newGame();
             });
         });
 
-        function resetGame() {
-            board = Array(9).fill('');
-            gameOver = false;
-            statusEl.textContent = 'Твой ход (❌)';
+        document.getElementById('reset').addEventListener('click', newGame);
+
+        function newGame() {
+            initBoard();
             render();
         }
 
-        resetBtn.addEventListener('click', resetGame);
-
         // === Старт ===
-        createBoard();
-        render();
+        newGame();
     </script>
 </body>
 </html>
