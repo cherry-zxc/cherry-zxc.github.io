@@ -18,29 +18,105 @@
             justify-content: center;
             padding: 16px;
             user-select: none;
+            overflow-x: hidden;
         }
 
-        h1 {
-            font-size: 26px;
+        /* === Экраны === */
+        .screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #2a1f18 0%, #0d0a08 100%);
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            transition: opacity 0.4s;
+        }
+        .screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .screen h1 {
+            font-size: 44px;
+            margin-bottom: 8px;
+            color: #d4b483;
+            letter-spacing: 6px;
+            text-shadow: 0 3px 8px rgba(0,0,0,0.8);
+        }
+
+        .screen .subtitle {
+            font-size: 14px;
+            color: #8a6a4a;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+            font-style: italic;
+        }
+
+        .menu-btn {
+            padding: 16px 60px;
+            background: linear-gradient(145deg, #5a4530, #3d2e1f);
+            color: #e8dcc8;
+            border: 2px solid #7a5f42;
+            border-radius: 8px;
+            font-size: 20px;
+            font-family: inherit;
+            cursor: pointer;
+            letter-spacing: 4px;
+            margin: 8px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+            min-width: 240px;
+        }
+
+        .menu-btn:hover {
+            background: linear-gradient(145deg, #6b5340, #4a3826);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+        }
+
+        .menu-btn:active { transform: translateY(1px); }
+
+        .menu-btn.gold {
+            background: linear-gradient(145deg, #d4af37, #a88a2a);
+            color: #1a1410;
+            border-color: #d4af37;
+            font-weight: bold;
+        }
+        .menu-btn.gold:hover {
+            background: linear-gradient(145deg, #e0bc44, #b8983a);
+        }
+
+        /* === Игра === */
+        #gameScreen {
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
+            padding: 0 4px;
+        }
+
+        .game-title {
+            font-size: 18px;
             color: #d4b483;
             letter-spacing: 3px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
         }
 
-        .difficulty {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .diff-btn {
+        .finish-btn {
             padding: 8px 16px;
-            background: linear-gradient(145deg, #3d2e1f, #1a120a);
-            color: #a08868;
-            border: 1px solid #5a4530;
+            background: linear-gradient(145deg, #6b2020, #3d1010);
+            color: #e8dcc8;
+            border: 1px solid #8a3030;
             border-radius: 6px;
             font-size: 13px;
             font-family: inherit;
@@ -49,12 +125,8 @@
             transition: all 0.15s;
         }
 
-        .diff-btn.active {
-            background: linear-gradient(145deg, #d4af37, #a88a2a);
-            color: #1a1410;
-            border-color: #d4af37;
-            font-weight: bold;
-        }
+        .finish-btn:hover { background: linear-gradient(145deg, #8a3030, #5a1818); }
+        .finish-btn:active { transform: translateY(1px); }
 
         .status {
             font-size: 15px;
@@ -99,6 +171,694 @@
 
         .cell.selected { box-shadow: inset 0 0 0 3px #d4af37; }
 
+        .cell.possible::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: rgba(212, 175, 55, 0.7);
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .cell.possible.capture::after {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: 3px solid rgba(220, 60, 60, 0.85);
+            border-radius: 50%;
+            animation: pulseRed 1.2s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,60,60,0.5); }
+            50% { box-shadow: 0 0 0 6px rgba(220,60,60,0); }
+        }
+
+        .cell.last-move { box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 0.5); }
+
+        .piece {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            box-shadow:
+                0 3px 5px rgba(0,0,0,0.6),
+                inset 0 -3px 6px rgba(0,0,0,0.4),
+                inset 0 3px 6px rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            pointer-events: none;
+            transition: transform 0.2s;
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #f5e6c8, #b8935a);
+            border: 1px solid #8a6a3a;
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #4a3826, #0d0a08);
+            border: 1px solid #000;
+        }
+
+        .piece.king {
+            box-shadow:
+                0 3px 5px rgba(0,0,0,0.6),
+                inset 0 -3px 6px rgba(0,0,0,0.4),
+                inset 0 3px 6px rgba(255,255,255,0.15),
+                0 0 12px rgba(212, 175, 55, 0.6);
+        }
+
+        .piece.king::after {
+            content: '♛';
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .piece.white.king::after { color: #8a5a1a; text-shadow: 0 0 2px #fff; }
+        .piece.black.king::after { color: #d4af37; text-shadow: 0 0 3px #000; }
+
+        /* === Победа === */
+        .winner-box {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+        }
+        .winner-box.hidden { display: none; }
+        .winner-box h2 {
+            font-size: 42px;
+            color: #d4af37;
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+            text-shadow: 0 4px 12px rgba(212,175,55,0.5);
+        }
+        .winner-box p {
+            font-size: 18px;
+            color: #c9a875;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 400px) {
+            #board { grid-template-columns: repeat(8, 38px); grid-template-rows: repeat(8, 38px); }
+            .cell { width: 38px; height: 38px; }
+            .piece { width: 28px; height: 28px; }
+            .screen h1 { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- === ЭКРАН 1: Меню === -->
+    <div class="screen" id="menuScreen">
+        <h1>ШАШКИ</h1>
+        <div class="subtitle">♛ КОЖАНЫЙ СТИЛЬ ♛</div>
+        <button class="menu-btn gold" id="playBtn">ИГРАТЬ</button>
+        <button class="menu-btn" id="rulesBtn">ПРАВИЛА</button>
+    </div>
+
+    <!-- === ЭКРАН 2: Выбор сложности === -->
+    <div class="screen hidden" id="diffScreen">
+        <h1>УРОВЕНЬ</h1>
+        <div class="subtitle">ВЫБЕРИ СЛОЖНОСТЬ</div>
+        <button class="menu-btn" data-level="easy">😴 ЛЁГКИЙ</button>
+        <button class="menu-btn" data-level="medium">🤔 СРЕДНИЙ</button>
+        <button class="menu-btn" data-level="hard">🧠 СЛОЖНЫЙ</button>
+        <button class="menu-btn" id="backToMenu" style="margin-top:20px; font-size:14px; padding:10px 30px; min-width:auto;">← НАЗАД</button>
+    </div>
+
+    <!-- === ЭКРАН 3: Правила === -->
+    <div class="screen hidden" id="rulesScreen">
+        <h1 style="font-size:28px;">ПРАВИЛА</h1>
+        <div style="max-width: 380px; text-align: left; color: #c9a875; font-size: 15px; line-height: 1.7; margin: 20px 0;">
+            • Шашки ходят по диагонали на 1 клетку вперёд.<br>
+            • Бьют <b>через</b> фигуру соперника, если за ней пусто.<br>
+            • <b>Взятие необязательно</b> — ходи как хочешь.<br>
+            • Можно бить несколько фигур подряд.<br>
+            • Дошёл до конца — стал <b>дамкой ♛</b>.<br>
+            • Дамка ходит и бьёт <b>на любое расстояние</b>.<br>
+            • Побеждает тот, у кого остались фигуры.
+        </div>
+        <button class="menu-btn gold" id="rulesBack">ПОНЯЛ</button>
+    </div>
+
+    <!-- === ЭКРАН 4: Игра === -->
+    <div id="gameScreen" style="display:none;">
+        <div class="game-header">
+            <div class="game-title">♛ ШАШКИ</div>
+            <button class="finish-btn" id="finishBtn">✕ ЗАВЕРШИТЬ</button>
+        </div>
+
+        <div class="status" id="status">Твой ход (белые)</div>
+
+        <div class="board-frame">
+            <div id="board"></div>
+        </div>
+    </div>
+
+    <!-- === Победа === -->
+    <div class="winner-box hidden" id="winnerBox">
+        <h2 id="winnerText">ПОБЕДА!</h2>
+        <p id="winnerSub"></p>
+        <button class="menu-btn gold" id="winnerBtn">В МЕНЮ</button>
+    </div>
+
+    <script>
+        // === Состояние ===
+        let board = [];
+        let selected = null;
+        let possibleMoves = [];
+        let turn = 'w';
+        let gameOver = false;
+        let difficulty = 'easy';
+        let lastMove = null;
+        let thinking = false;
+
+        const boardEl = document.getElementById('board');
+        const statusEl = document.getElementById('status');
+
+        // === Экраны ===
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            if (id) {
+                document.getElementById(id).classList.remove('hidden');
+                document.getElementById('gameScreen').style.display = 'none';
+            } else {
+                document.getElementById('gameScreen').style.display = 'block';
+            }
+        }
+
+        // === Инициализация ===
+        function initBoard() {
+            board = Array.from({ length: 8 }, () => Array(8).fill(null));
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if ((r + c) % 2 === 1) {
+                        if (r < 3) board[r][c] = { color: 'b', king: false };
+                        if (r > 4) board[r][c] = { color: 'w', king: false };
+                    }
+                }
+            }
+            turn = 'w';
+            selected = null;
+            possibleMoves = [];
+            gameOver = false;
+            lastMove = null;
+            thinking = false;
+        }
+
+        // === Возможные ходы ===
+        function getMovesFor(r, c) {
+            const piece = board[r][c];
+            if (!piece) return [];
+            const moves = [];
+            const dirs = piece.king
+                ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+                : (piece.color === 'w' ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]);
+
+            for (const [dr, dc] of dirs) {
+                // обычный ход на 1 (не дамка)
+                if (!piece.king) {
+                    const nr = r + dr, nc = c + dc;
+                    if (inBoard(nr, nc) && !board[nr][nc]) {
+                        moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                    }
+                }
+
+                // взятие — все направления (русские правила)
+                for (const [ddr, ddc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+                    if (piece.king) {
+                        // дамка: ищем врага по диагонали на любом расстоянии
+                        let step = 1;
+                        while (inBoard(r + ddr*step, c + ddc*step)) {
+                            const mr = r + ddr*step, mc = c + ddc*step;
+                            if (board[mr][mc]) {
+                                if (board[mr][mc].color !== piece.color) {
+                                    // за врагом — свободные клетки
+                                    let j = step + 1;
+                                    while (inBoard(r + ddr*j, c + ddc*j) && !board[r + ddr*j][c + ddc*j]) {
+                                        moves.push({
+                                            from: {r, c},
+                                            to: {r: r + ddr*j, c: c + ddc*j},
+                                            capture: {r: mr, c: mc}
+                                        });
+                                        j++;
+                                    }
+                                }
+                                break;
+                            }
+                            step++;
+                        }
+                    } else {
+                        const mr = r + ddr, mc = c + ddc;
+                        const tr = r + 2*ddr, tc = c + 2*ddc;
+                        if (inBoard(tr, tc) && board[mr] && board[mr][mc]
+                            && board[mr][mc].color !== piece.color
+                            && !board[tr][tc]) {
+                            moves.push({ from: {r, c}, to: {r: tr, c: tc}, capture: {r: mr, c: mc} });
+                        }
+                    }
+                }
+
+                // дамка — длинные обычные ходы
+                if (piece.king) {
+                    let step = 1;
+                    while (true) {
+                        const nr = r + dr * step, nc = c + dc * step;
+                        if (!inBoard(nr, nc) || board[nr][nc]) break;
+                        moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                        step++;
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        function getAllMoves(color) {
+            const all = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = board[r][c];
+                    if (p && p.color === color) {
+                        for (const m of getMovesFor(r, c)) all.push(m);
+                    }
+                }
+            }
+            return all;
+        }
+
+        // Взятие НЕобязательно — просто все ходы
+        function getLegalMoves(color) {
+            return getAllMoves(color);
+        }
+
+        function inBoard(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+        // === Отрисовка ===
+        function render() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    const isDark = (r + c) % 2 === 1;
+                    cell.className = 'cell ' + (isDark ? 'dark' : 'light');
+
+                    if (selected && selected.r === r && selected.c === c) {
+                        cell.classList.add('selected');
+                    }
+
+                    if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c)
+                        || (lastMove.to.r === r && lastMove.to.c === c))) {
+                        cell.classList.add('last-move');
+                    }
+
+                    const moveHere = possibleMoves.find(m => m.to.r === r && m.to.c === c);
+                    if (moveHere) {
+                        cell.classList.add('possible');
+                        if (moveHere.capture) cell.classList.add('capture');
+                    }
+
+                    const p = board[r][c];
+                    if (p) {
+                        const pieceEl = document.createElement('div');
+                        pieceEl.className = 'piece ' + (p.color === 'w' ? 'white' : 'black');
+                        if (p.king) pieceEl.classList.add('king');
+                        cell.appendChild(pieceEl);
+                    }
+
+                    cell.addEventListener('click', () => handleClick(r, c));
+                    boardEl.appendChild(cell);
+                }
+            }
+            updateStatus();
+        }
+
+        function updateStatus() {
+            if (gameOver || thinking) return;
+            const legal = getLegalMoves(turn);
+            if (legal.length === 0) {
+                gameOver = true;
+                const winner = turn === 'w' ? 'Чёрные победили! 🏆' : 'Белые победили! 🏆';
+                showWinner(turn === 'w' ? 'ПОРАЖЕНИЕ' : 'ПОБЕДА!', turn === 'w' ? 'Бот выиграл' : 'Ты обыграл бота');
+                return;
+            }
+            statusEl.textContent = turn === 'w' ? 'Твой ход (белые)' : 'Бот думает... 🤖';
+        }
+
+        // === Ход игрока ===
+        function handleClick(r, c) {
+            if (gameOver || turn !== 'w' || thinking) return;
+
+            const move = possibleMoves.find(m => m.to.r === r && m.to.c === c);
+            if (move) {
+                applyMove(move);
+                return;
+            }
+
+            const p = board[r][c];
+            if (p && p.color === 'w') {
+                selected = { r, c };
+                const legal = getLegalMoves('w');
+                possibleMoves = legal.filter(m => m.from.r === r && m.from.c === c);
+                render();
+            } else {
+                selected = null;
+                possibleMoves = [];
+                render();
+            }
+        }
+
+        function applyMove(move) {
+            const piece = board[move.from.r][move.from.c];
+            board[move.from.r][move.from.c] = null;
+            board[move.to.r][move.to.c] = piece;
+
+            if (move.capture) {
+                board[move.capture.r][move.capture.c] = null;
+            }
+
+            if (!piece.king) {
+                if (piece.color === 'w' && move.to.r === 0) piece.king = true;
+                if (piece.color === 'b' && move.to.r === 7) piece.king = true;
+            }
+
+            lastMove = move;
+            selected = null;
+            possibleMoves = [];
+            turn = turn === 'w' ? 'b' : 'w';
+            render();
+
+            if (!gameOver && turn === 'b') {
+                thinking = true;
+                statusEl.textContent = 'Бот думает... 🤖';
+                setTimeout(() => {
+                    thinking = false;
+                    botMove();
+                }, 600);
+            }
+        }
+
+        // === Боты ===
+        function botMove() {
+            if (gameOver) return;
+            const legal = getLegalMoves('b');
+            if (legal.length === 0) {
+                gameOver = true;
+                showWinner('ПОБЕДА!', 'Ты обыграл бота 🎉');
+                return;
+            }
+
+            let move;
+            if (difficulty === 'easy') {
+                move = legal[Math.floor(Math.random() * legal.length)];
+            } else if (difficulty === 'medium') {
+                move = pickMediumMove(legal);
+            } else {
+                move = pickHardMove(legal);
+            }
+
+            applyMove(move);
+        }
+
+        function pickMediumMove(legal) {
+            const captures = legal.filter(m => m.capture);
+            if (captures.length > 0) {
+                captures.sort((a, b) => scoreCapture(b) - scoreCapture(a));
+                if (Math.random() < 0.85) return captures[0];
+            }
+            const safeMoves = legal.filter(m => !isRisky(m));
+            if (safeMoves.length > 0 && Math.random() < 0.7) {
+                return safeMoves[Math.floor(Math.random() * safeMoves.length)];
+            }
+            return legal[Math.floor(Math.random() * legal.length)];
+        }
+
+        // === СЛОЖНЫЙ: минимакс ===
+        function pickHardMove(legal) {
+            let bestScore = -Infinity;
+            let bestMoves = [];
+
+            for (const move of legal) {
+                const backup = cloneBoard(board);
+                applyMoveToBoard(board, move);
+                const score = minimax(board, 4, -Infinity, Infinity, false);
+                board = backup;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMoves = [move];
+                } else if (score === bestScore) {
+                    bestMoves.push(move);
+                }
+            }
+
+            return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+        }
+
+        function minimax(b, depth, alpha, beta, isBot) {
+            if (depth === 0) return evaluateBoard(b);
+
+            const color = isBot ? 'b' : 'w';
+            const moves = getAllMovesFor(b, color);
+
+            if (moves.length === 0) {
+                return isBot ? -10000 : 10000;
+            }
+
+            if (isBot) {
+                let best = -Infinity;
+                for (const m of moves) {
+                    const backup = cloneBoard(b);
+                    applyMoveToBoard(b, m);
+                    const score = minimax(b, depth - 1, alpha, beta, false);
+                    restoreBoard(b, backup);
+                    best = Math.max(best, score);
+                    alpha = Math.max(alpha, score);
+                    if (beta <= alpha) break;
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (const m of moves) {
+                    const backup = cloneBoard(b);
+                    applyMoveToBoard(b, m);
+                    const score = minimax(b, depth - 1, alpha, beta, true);
+                    restoreBoard(b, backup);
+                    best = Math.min(best, score);
+                    beta = Math.min(beta, score);
+                    if (beta <= alpha) break;
+                }
+                return best;
+            }
+        }
+
+        function evaluateBoard(b) {
+            let score = 0;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = b[r][c];
+                    if (!p) continue;
+                    const value = p.king ? 5 : 1;
+                    // бот (чёрные) — поближе к нижнему краю, дамки ценнее
+                    if (p.color === 'b') {
+                        score += value + (r / 8) * 0.3;
+                    } else {
+                        score -= value + ((7 - r) / 8) * 0.3;
+                    }
+                }
+            }
+            return score;
+        }
+
+        function cloneBoard(b) {
+            return b.map(row => row.map(p => p ? { ...p } : null));
+        }
+        function restoreBoard(target, backup) {
+            for (let r = 0; r < 8; r++)
+                for (let c = 0; c < 8; c++)
+                    target[r][c] = backup[r][c];
+        }
+        function applyMoveToBoard(b, move) {
+            const piece = b[move.from.r][move.from.c];
+            b[move.from.r][move.from.c] = null;
+            b[move.to.r][move.to.c] = piece;
+            if (move.capture) b[move.capture.r][move.capture.c] = null;
+            if (!piece.king) {
+                if (piece.color === 'w' && move.to.r === 0) piece.king = true;
+                if (piece.color === 'b' && move.to.r === 7) piece.king = true;
+            }
+        }
+
+        function getAllMovesFor(b, color) {
+            const all = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = b[r][c];
+                    if (p && p.color === color) {
+                        const moves = getMovesForBoard(b, r, c);
+                        for (const m of moves) all.push(m);
+                    }
+                }
+            }
+            return all;
+        }
+
+        function getMovesForBoard(b, r, c) {
+            const piece = b[r][c];
+            if (!piece) return [];
+            const moves = [];
+            const dirs = piece.king
+                ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+                : (piece.color === 'w' ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]);
+
+            for (const [dr, dc] of dirs) {
+                if (!piece.king) {
+                    const nr = r + dr, nc = c + dc;
+                    if (inBoard(nr, nc) && !b[nr][nc]) {
+                        moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                    }
+                }
+                for (const [ddr, ddc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) {
+                    if (piece.king) {
+                        let step = 1;
+                        while (inBoard(r + ddr*step, c + ddc*step)) {
+                            const mr = r + ddr*step, mc = c + ddc*step;
+                            if (b[mr][mc]) {
+                                if (b[mr][mc].color !== piece.color) {
+                                    let j = step + 1;
+                                    while (inBoard(r + ddr*j, c + ddc*j) && !b[r + ddr*j][c + ddc*j]) {
+                                        moves.push({ from: {r, c}, to: {r: r + ddr*j, c: c + ddc*j}, capture: {r: mr, c: mc} });
+                                        j++;
+                                    }
+                                }
+                                break;
+                            }
+                            step++;
+                        }
+                    } else {
+                        const mr = r + ddr, mc = c + ddc;
+                        const tr = r + 2*ddr, tc = c + 2*ddc;
+                        if (inBoard(tr, tc) && b[mr] && b[mr][mc]
+                            && b[mr][mc].color !== piece.color
+                            && !b[tr][tc]) {
+                            moves.push({ from: {r, c}, to: {r: tr, c: tc}, capture: {r: mr, c: mc} });
+                        }
+                    }
+                }
+                if (piece.king) {
+                    let step = 1;
+                    while (true) {
+                        const nr = r + dr * step, nc = c + dc * step;
+                        if (!inBoard(nr, nc) || b[nr][nc]) break;
+                        moves.push({ from: {r, c}, to: {r: nr, c: nc}, capture: null });
+                        step++;
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function scoreCapture(m) {
+            const target = board[m.capture.r][m.capture.c];
+            return target && target.king ? 2 : 1;
+        }
+
+        function isRisky(move) {
+            const backup = cloneBoard(board);
+            applyMoveToBoard(board, move);
+            let risky = false;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = board[r][c];
+                    if (p && p.color === 'w') {
+                        const caps = getMovesForBoard(board, r, c).filter(m => m.capture);
+                        if (caps.some(cm => cm.capture.r === move.to.r && cm.capture.c === move.to.c)) {
+                            risky = true;
+                        }
+                    }
+                }
+            }
+            restoreBoard(board, backup);
+            return risky;
+        }
+
+        // === Победа ===
+        function showWinner(title, sub) {
+            document.getElementById('winnerText').textContent = title;
+            document.getElementById('winnerSub').textContent = sub;
+            document.getElementById('winnerBox').classList.remove('hidden');
+        }
+
+        // === Кнопки ===
+        document.getElementById('playBtn').addEventListener('click', () => {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('diffScreen').classList.remove('hidden');
+        });
+
+        document.getElementById('rulesBtn').addEventListener('click', () => {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('rulesScreen').classList.remove('hidden');
+        });
+
+        document.getElementById('rulesBack').addEventListener('click', () => {
+            document.getElementById('rulesScreen').classList.add('hidden');
+            document.getElementById('menuScreen').classList.remove('hidden');
+        });
+
+        document.getElementById('backToMenu').addEventListener('click', () => {
+            document.getElementById('diffScreen').classList.add('hidden');
+            document.getElementById('menuScreen').classList.remove('hidden');
+        });
+
+        document.querySelectorAll('#diffScreen .menu-btn[data-level]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                difficulty = btn.dataset.level;
+                document.getElementById('diffScreen').classList.add('hidden');
+                document.getElementById('menuScreen').classList.add('hidden');
+                document.getElementById('rulesScreen').classList.add('hidden');
+                document.getElementById('winnerBox').classList.add('hidden');
+                document.getElementById('gameScreen').style.display = 'block';
+                newGame();
+            });
+        });
+
+        document.getElementById('finishBtn').addEventListener('click', () => {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('winnerBox').classList.add('hidden');
+            document.getElementById('menuScreen').classList.remove('hidden');
+            gameOver = true;
+        });
+
+        document.getElementById('winnerBtn').addEventListener('click', () => {
+            document.getElementById('winnerBox').classList.add('hidden');
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('menuScreen').classList.remove('hidden');
+        });
+
+        function newGame() {
+            initBoard();
+            render();
+        }
+
+        // === Старт ===
+        initBoard();
+        render();
+    </script>
+</body>
+</html>
         .cell.possible::after {
             content: '';
             position: absolute;
