@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Поймай квадрат 🎯</title>
+    <title>Крестики-нолики 🤖</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,42 +18,68 @@
             padding: 20px;
             user-select: none;
         }
-        h1 { font-size: 28px; margin-bottom: 8px; }
-        .info {
+        h1 { font-size: 28px; margin-bottom: 10px; }
+        .difficulty {
             display: flex;
-            gap: 30px;
+            gap: 8px;
             margin-bottom: 16px;
-            font-size: 18px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        .info span { color: #4ea1ff; font-weight: bold; }
-        #game {
-            position: relative;
-            width: 320px;
-            height: 320px;
+        .diff-btn {
+            padding: 8px 16px;
             background: #161b22;
+            color: #888;
             border: 2px solid #30363d;
-            border-radius: 16px;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
-        #target {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #4ea1ff, #a855f7);
-            border-radius: 12px;
+            border-radius: 10px;
+            font-size: 14px;
             cursor: pointer;
-            transition: transform 0.05s;
+            font-weight: bold;
+        }
+        .diff-btn.active {
+            background: #4ea1ff;
+            color: #fff;
+            border-color: #4ea1ff;
+        }
+        #status {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #4ea1ff;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 8px;
+            background: #30363d;
+            padding: 8px;
+            border-radius: 16px;
+        }
+        .cell {
+            background: #161b22;
+            border: none;
+            border-radius: 10px;
+            font-size: 52px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #eee;
+            transition: background 0.15s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
         }
-        #target:active { transform: scale(0.9); }
-        #startBtn {
+        .cell:hover:not(:disabled) { background: #21262d; }
+        .cell:active:not(:disabled) { transform: scale(0.96); }
+        .cell.x { color: #4ea1ff; }
+        .cell.o { color: #ff6b6b; }
+        .cell:disabled { cursor: default; }
+        .cell.win { background: #1f6feb; }
+        #reset {
             margin-top: 16px;
             padding: 12px 32px;
-            font-size: 18px;
+            font-size: 16px;
             background: #4ea1ff;
             color: #fff;
             border: none;
@@ -61,93 +87,226 @@
             cursor: pointer;
             font-weight: bold;
         }
-        #startBtn:active { background: #3a8fe0; }
-        #message {
-            margin-top: 16px;
-            font-size: 16px;
-            color: #888;
-            text-align: center;
-            min-height: 24px;
-        }
+        #reset:active { background: #3a8fe0; }
     </style>
 </head>
 <body>
-    <h1>🎯 Поймай квадрат</h1>
-    <div class="info">
-        <div>Очки: <span id="score">0</span></div>
-        <div>Время: <span id="time">30</span>с</div>
+    <h1>❌ Крестики-нолики ⭕</h1>
+
+    <div class="difficulty">
+        <button class="diff-btn" data-level="easy">😴 Лёгкий</button>
+        <button class="diff-btn active" data-level="medium">🤔 Средний</button>
+        <button class="diff-btn" data-level="hard">🧠 Сложный</button>
     </div>
-    <div id="game">
-        <div id="target" style="display:none">👆</div>
-    </div>
-    <button id="startBtn">Старт</button>
-    <div id="message">Успей тапнуть по квадрату за 30 секунд!</div>
+
+    <div id="status">Твой ход (❌)</div>
+    <div id="board"></div>
+    <button id="reset">Заново</button>
 
     <script>
-        const game = document.getElementById('game');
-        const target = document.getElementById('target');
-        const scoreEl = document.getElementById('score');
-        const timeEl = document.getElementById('time');
-        const startBtn = document.getElementById('startBtn');
-        const message = document.getElementById('message');
+        const boardEl = document.getElementById('board');
+        const statusEl = document.getElementById('status');
+        const resetBtn = document.getElementById('reset');
+        const diffBtns = document.querySelectorAll('.diff-btn');
 
-        let score = 0;
-        let timeLeft = 30;
-        let timer = null;
-        let playing = false;
+        let board = Array(9).fill('');
+        let gameOver = false;
+        let difficulty = 'medium';
+        const HUMAN = 'X';
+        const BOT = 'O';
 
-        function moveTarget() {
-            const maxX = game.clientWidth - target.clientWidth;
-            const maxY = game.clientHeight - target.clientHeight;
-            const x = Math.random() * maxX;
-            const y = Math.random() * maxY;
-            target.style.left = x + 'px';
-            target.style.top = y + 'px';
+        // === Создание поля ===
+        function createBoard() {
+            boardEl.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('button');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => handleClick(i));
+                boardEl.appendChild(cell);
+            }
         }
 
-        function startGame() {
-            score = 0;
-            timeLeft = 30;
-            playing = true;
-            scoreEl.textContent = score;
-            timeEl.textContent = timeLeft;
-            message.textContent = 'Лови! 🎯';
-            startBtn.textContent = 'Заново';
-            target.style.display = 'flex';
-            moveTarget();
-
-            clearInterval(timer);
-            timer = setInterval(() => {
-                timeLeft--;
-                timeEl.textContent = timeLeft;
-                if (timeLeft <= 0) endGame();
-            }, 1000);
+        // === Отрисовка ===
+        function render() {
+            const cells = boardEl.children;
+            for (let i = 0; i < 9; i++) {
+                cells[i].textContent = board[i];
+                cells[i].className = 'cell';
+                if (board[i] === 'X') cells[i].classList.add('x');
+                if (board[i] === 'O') cells[i].classList.add('o');
+                cells[i].disabled = board[i] !== '' || gameOver;
+            }
         }
 
-        function endGame() {
-            clearInterval(timer);
-            playing = false;
-            target.style.display = 'none';
-            message.textContent = 'Игра окончена! Твой результат: ' + score + ' очков 🎉';
+        // === Проверка победы ===
+        const winLines = [
+            [0,1,2],[3,4,5],[6,7,8], // строки
+            [0,3,6],[1,4,7],[2,5,8], // столбцы
+            [0,4,8],[2,4,6]          // диагонали
+        ];
+
+        function checkWinner(b) {
+            for (const line of winLines) {
+                const [a, c, d] = line;
+                if (b[a] && b[a] === b[c] && b[a] === b[d]) {
+                    return { winner: b[a], line };
+                }
+            }
+            if (b.every(cell => cell !== '')) return { winner: 'draw' };
+            return null;
         }
 
-        target.addEventListener('click', () => {
-            if (!playing) return;
-            score++;
-            scoreEl.textContent = score;
-            moveTarget();
+        // === Минимакс — мозг сложного бота ===
+        function minimax(b, isMaximizing, depth = 0) {
+            const result = checkWinner(b);
+            if (result) {
+                if (result.winner === BOT) return 10 - depth;
+                if (result.winner === HUMAN) return depth - 10;
+                return 0;
+            }
+
+            if (isMaximizing) {
+                let best = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === '') {
+                        b[i] = BOT;
+                        best = Math.max(best, minimax(b, false, depth + 1));
+                        b[i] = '';
+                    }
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === '') {
+                        b[i] = HUMAN;
+                        best = Math.min(best, minimax(b, true, depth + 1));
+                        b[i] = '';
+                    }
+                }
+                return best;
+            }
+        }
+
+        function getBestMove(b) {
+            let bestScore = -Infinity;
+            let bestMove = -1;
+            for (let i = 0; i < 9; i++) {
+                if (b[i] === '') {
+                    b[i] = BOT;
+                    const score = minimax(b, false);
+                    b[i] = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+            }
+            return bestMove;
+        }
+
+        function getRandomMove(b) {
+            const empty = [];
+            for (let i = 0; i < 9; i++) if (b[i] === '') empty.push(i);
+            return empty[Math.floor(Math.random() * empty.length)];
+        }
+
+        // Умный бот с ошибочностью для среднего уровня
+        function getSmartMove(b) {
+            // 1) Выиграть, если можно
+            for (let i = 0; i < 9; i++) {
+                if (b[i] === '') {
+                    b[i] = BOT;
+                    if (checkWinner(b)?.winner === BOT) { b[i] = ''; return i; }
+                    b[i] = '';
+                }
+            }
+            // 2) Заблокировать игрока
+            for (let i = 0; i < 9; i++) {
+                if (b[i] === '') {
+                    b[i] = HUMAN;
+                    if (checkWinner(b)?.winner === HUMAN) { b[i] = ''; return i; }
+                    b[i] = '';
+                }
+            }
+            // 3) Центр
+            if (b[4] === '') return 4;
+            // 4) Углы
+            const corners = [0, 2, 6, 8].filter(i => b[i] === '');
+            if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+            // 5) Что осталось
+            return getRandomMove(b);
+        }
+
+        function getBotMove() {
+            if (difficulty === 'easy') return getRandomMove(board);
+            if (difficulty === 'medium') {
+                return Math.random() < 0.5 ? getSmartMove(board) : getRandomMove(board);
+            }
+            return getBestMove(board); // hard — минимакс, непобедим
+        }
+
+        // === Обработка хода игрока ===
+        function handleClick(i) {
+            if (board[i] !== '' || gameOver) return;
+            board[i] = HUMAN;
+            render();
+            if (finishIfOver()) return;
+
+            statusEl.textContent = 'Бот думает... 🤖';
+            setTimeout(() => {
+                const move = getBotMove();
+                if (move !== -1 && move !== undefined) board[move] = BOT;
+                render();
+                if (!finishIfOver()) {
+                    statusEl.textContent = 'Твой ход (❌)';
+                }
+            }, 400);
+        }
+
+        function finishIfOver() {
+            const result = checkWinner(board);
+            if (!result) return false;
+            gameOver = true;
+            render();
+
+            if (result.winner === 'draw') {
+                statusEl.textContent = 'Ничья! 🤝';
+            } else if (result.winner === HUMAN) {
+                statusEl.textContent = 'Ты победил! 🎉';
+            } else {
+                statusEl.textContent = 'Бот победил 😈';
+            }
+
+            if (result.line) {
+                result.line.forEach(i => boardEl.children[i].classList.add('win'));
+            }
+            return true;
+        }
+
+        // === Уровни сложности ===
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                diffBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.dataset.level;
+                resetGame();
+            });
         });
 
-        // на телефоне тап срабатывает как touchstart — добавим на всякий
-        target.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!playing) return;
-            score++;
-            scoreEl.textContent = score;
-            moveTarget();
-        }, { passive: false });
+        function resetGame() {
+            board = Array(9).fill('');
+            gameOver = false;
+            statusEl.textContent = 'Твой ход (❌)';
+            render();
+        }
 
-        startBtn.addEventListener('click', startGame);
+        resetBtn.addEventListener('click', resetGame);
+
+        // === Старт ===
+        createBoard();
+        render();
     </script>
 </body>
 </html>
