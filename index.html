@@ -2,31 +2,152 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Арсений — сайт</title>
+    <title>Поймай квадрат 🎯</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: Arial, sans-serif;
-            background: #111;
+            background: #0d1117;
             color: #eee;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
-            margin: 0;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
+            user-select: none;
         }
-        h1 { font-size: 36px; margin-bottom: 10px; }
-        p { color: #888; }
-        a { color: #4ea1ff; text-decoration: none; }
+        h1 { font-size: 28px; margin-bottom: 8px; }
+        .info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .info span { color: #4ea1ff; font-weight: bold; }
+        #game {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 16px;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #target {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #4ea1ff, #a855f7);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.05s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        #target:active { transform: scale(0.9); }
+        #startBtn {
+            margin-top: 16px;
+            padding: 12px 32px;
+            font-size: 18px;
+            background: #4ea1ff;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #startBtn:active { background: #3a8fe0; }
+        #message {
+            margin-top: 16px;
+            font-size: 16px;
+            color: #888;
+            text-align: center;
+            min-height: 24px;
+        }
     </style>
 </head>
 <body>
-    <div>
-        <h1>Привет, я Арсений 👋</h1>
-        <p>Мне 14, я учусь программировать.</p>
-        <p><a href="https://github.com/cherryos-you">Мой GitHub</a></p>
+    <h1>🎯 Поймай квадрат</h1>
+    <div class="info">
+        <div>Очки: <span id="score">0</span></div>
+        <div>Время: <span id="time">30</span>с</div>
     </div>
+    <div id="game">
+        <div id="target" style="display:none">👆</div>
+    </div>
+    <button id="startBtn">Старт</button>
+    <div id="message">Успей тапнуть по квадрату за 30 секунд!</div>
+
+    <script>
+        const game = document.getElementById('game');
+        const target = document.getElementById('target');
+        const scoreEl = document.getElementById('score');
+        const timeEl = document.getElementById('time');
+        const startBtn = document.getElementById('startBtn');
+        const message = document.getElementById('message');
+
+        let score = 0;
+        let timeLeft = 30;
+        let timer = null;
+        let playing = false;
+
+        function moveTarget() {
+            const maxX = game.clientWidth - target.clientWidth;
+            const maxY = game.clientHeight - target.clientHeight;
+            const x = Math.random() * maxX;
+            const y = Math.random() * maxY;
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            playing = true;
+            scoreEl.textContent = score;
+            timeEl.textContent = timeLeft;
+            message.textContent = 'Лови! 🎯';
+            startBtn.textContent = 'Заново';
+            target.style.display = 'flex';
+            moveTarget();
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            playing = false;
+            target.style.display = 'none';
+            message.textContent = 'Игра окончена! Твой результат: ' + score + ' очков 🎉';
+        }
+
+        target.addEventListener('click', () => {
+            if (!playing) return;
+            score++;
+            scoreEl.textContent = score;
+            moveTarget();
+        });
+
+        // на телефоне тап срабатывает как touchstart — добавим на всякий
+        target.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!playing) return;
+            score++;
+            scoreEl.textContent = score;
+            moveTarget();
+        }, { passive: false });
+
+        startBtn.addEventListener('click', startGame);
+    </script>
 </body>
 </html>
